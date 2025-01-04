@@ -5,6 +5,9 @@ export default function Home() {
 
     <div>
       <h1>Welcome to Chatter</h1>
+
+      <h1>Join meeting</h1>
+      <h2>Start meeting</h2>
     </div>
 
   );
