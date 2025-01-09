@@ -1,7 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import { VideoCameraIcon } from "@heroicons/react/outline";
+import JoinMeeting from "./components/JoinMeeting";
+import { useState } from "react";
+
 
 export default function Home() {
+
+  const [joinModal, setJoinModal] = useState(false)
+
+  const openJoinModal = () => {setJoinModal(true)}
+  const closeJoinModal = () => {setJoinModal(false)}
+
+
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
       <div className="block text-center">
@@ -30,7 +42,7 @@ export default function Home() {
       </div>
 
       <div className="flex justify-center">
-        <div className=" m-4 p-10 w-96 bg-white/10 backdrop-blur-lg rounded-2xl hover:bg-white/20 transition-all cursor-pointer group">
+        <div onClick={openJoinModal} className=" m-4 p-10 w-96 bg-white/10 backdrop-blur-lg rounded-2xl hover:bg-white/20 transition-all cursor-pointer group">
           <div className="flex justify-between items-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -131,6 +143,11 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+
+
+      <JoinMeeting isOpen={joinModal} close={closeJoinModal}/>
+
     </div>
   );
 }
