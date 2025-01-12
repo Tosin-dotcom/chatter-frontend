@@ -1,8 +1,7 @@
-import JoinMeeting from "../components/JoinMeeting";
+import MeetingTile from "../components/MeetingTile";
 
 export default function Page() {
-    
-    return (
-        <JoinMeeting />
-    )
-  }
+  return (
+    <MeetingTile name={"Oluwatosin"}/>
+  )
+}

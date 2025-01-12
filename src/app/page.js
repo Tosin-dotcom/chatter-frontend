@@ -3,15 +3,20 @@
 import Image from "next/image";
 import { VideoCameraIcon } from "@heroicons/react/outline";
 import JoinMeeting from "./components/JoinMeeting";
+import StartMeeting from "./components/StartMeeting";
 import { useState } from "react";
 
 
 export default function Home() {
 
   const [joinModal, setJoinModal] = useState(false)
+  const [startModal, setStartModal] = useState(false)
 
   const openJoinModal = () => {setJoinModal(true)}
   const closeJoinModal = () => {setJoinModal(false)}
+
+  const openStartModal = () => {setStartModal(true)}
+  const closeStartModal = () => {setStartModal(false)}
 
 
   return (
@@ -80,7 +85,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="m-4 p-10 w-96 bg-white/10 backdrop-blur-lg rounded-2xl hover:bg-white/20 transition-all cursor-pointer group">
+        <div onClick={openStartModal} className="m-4 p-10 w-96 bg-white/10 backdrop-blur-lg rounded-2xl hover:bg-white/20 transition-all cursor-pointer group">
           <div className="flex justify-between items-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -147,6 +152,7 @@ export default function Home() {
 
 
       <JoinMeeting isOpen={joinModal} close={closeJoinModal}/>
+      <StartMeeting isOpen={startModal} close={closeStartModal}/>
 
     </div>
   );

@@ -18,7 +18,7 @@ export default function JoinMeeting({isOpen, close}) {
             strokeWidth={1.5}
             stroke="currentColor"
             onClick={close}
-            className="size-6 cursor-pointer text-black"
+            className="size-6 cursor-pointer text-gray-500 hover:text-gray-950"
           >
             <path
               strokeLinecap="round"
@@ -37,7 +37,7 @@ export default function JoinMeeting({isOpen, close}) {
             id="firstname"
             name="firstname"
             placeholder="Enter Your name"
-            className="p-2 w-full rounded-lg mt-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+            className="p-2 w-full rounded-lg mt-1 border text-black border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
           />
         </div>
 
@@ -50,7 +50,7 @@ export default function JoinMeeting({isOpen, close}) {
             id="meetingcode"
             name="meetingcode"
             placeholder="Enter Meeting code"
-            className="p-2 w-full rounded-lg mt-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+            className="p-2 w-full rounded-lg mt-1 border text-black border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
           />
         </div>
 
