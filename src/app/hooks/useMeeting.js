@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from "react";
 
 export function useMeeting(meetingId) {
   const [localStream, setLocalStream] = useState(null);
+  const [remoteStreams, setRemoteStreams] = useState([]);
   const [peers, setPeers] = useState([]);
   const socketRef = useRef();
   const localVideoRef = useRef(null);
   const localStreamRef = useRef(null);
-
   const localPeer = useRef(null);
+  const pendingCandidates = useRef([]);
 
   const constraints = {
     video: { width: 640, height: 360, frameRate: 15 },
@@ -29,44 +30,57 @@ export function useMeeting(meetingId) {
       .join("");
   }
 
+  const handleIncomingCandidate = async (candidate) => {
+    if (localPeer.current.remoteDescription) {
+      await localPeer.current.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log("Added ICE candidate:", candidate);
+    } else {
+      pendingCandidates.current.push(candidate);
+      console.log("Queued ICE candidate:", candidate);
+    }
+  };
+
+  const flushPendingCandidates = async () => {
+    while (pendingCandidates.current.length > 0) {
+      const candidate = pendingCandidates.current.shift();
+      await localPeer.current.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log("Flushed ICE candidate:", candidate);
+    }
+  };
+
   const createPeer = async (stream) => {
     const peerConnection = new RTCPeerConnection(ICE_SERVERS);
     stream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, stream);
     });
+    console.log("Peer connection added");
 
-    const peer = {
-      peerId: generateRandomString(),
-      connection: peerConnection,
+    peerConnection.ontrack = (event) => {
+      const [remoteStream] = event.streams;
+      setRemoteStreams((prev) => [...prev, remoteStream]);
     };
 
-    peerConnection.addEventListener("icecandidate", (event) => {
+    peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        //console.log("candidate", event.candidate);
-        const candidate = event.candidate;
-        socketRef.current.send(JSON.stringify(event.candidate));
+        setTimeout(() => {
+          socketRef.current.send(JSON.stringify(event.candidate));
+        }, 500);
       }
-    });
+    };
 
-    // Listen for connectionstatechange on the local RTCPeerConnection
     peerConnection.addEventListener("connectionstatechange", (event) => {
       if (peerConnection.connectionState === "connected") {
-        console.log("Peers connected");
+        console.log("Peers connections successful");
       }
     });
 
-    console.log("Peer connection", peerConnection);
-    peers.push(peer);
-    setPeers(peers);
     return peerConnection;
   };
 
-  const createPeerConnection = async (stream) => {
+  const initializeLocalPeerConnection = async (stream) => {
     const peerConnection = await createPeer(stream);
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    console.log("offer", offer);
-    socketRef.current.send(JSON.stringify(offer));
+    localPeer.current = peerConnection;
+
     return peerConnection;
   };
 
@@ -79,39 +93,45 @@ export function useMeeting(meetingId) {
       setLocalStream(stream);
       localVideoRef.current.srcObject = stream;
       localStreamRef.current = stream;
-      const peer = createPeerConnection(stream);
-      localPeer.current = peer;
+      initializeLocalPeerConnection(stream);
     });
 
-    socketRef.current.addEventListener("open", (event) => {
-      socketRef.current.send(
-        JSON.stringify({
-          message: "Connection established",
-          type: "connection-est",
-        })
-      );
+    socketRef.current.addEventListener("open", () => {
+      setTimeout(() => {
+        socketRef.current.send(
+          JSON.stringify({
+            message: "Connection established",
+            type: "joined",
+          })
+        );
+      }, 1000);
     });
 
     socketRef.current.addEventListener("message", async (event) => {
       const message = JSON.parse(event.data);
-
-      if (message.type == "offer") {
+      if (message.type == "joined") {
+        const offer = await localPeer.current.createOffer();
+        localPeer.current.setLocalDescription(offer);
+        socketRef.current.send(JSON.stringify(offer));
+        flushPendingCandidates();
+        console.log("offer sent", offer);
+      } else if (message.type == "offer") {
         const peerConnection = await createPeer(localStreamRef.current);
-        await peerConnection.setRemoteDescription(
-          new RTCSessionDescription(message)
-        );
+        peerConnection.setRemoteDescription(new RTCSessionDescription(message));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        console.log("answer", answer);
         socketRef.current.send(JSON.stringify(answer));
+        flushPendingCandidates();
+      } else if (message.type == "answer") {
+        console.log("Answer received", message);
+        const remoteDesc = new RTCSessionDescription(message);
+        await localPeer.current.setRemoteDescription(remoteDesc);
       } else if (message.candidate) {
-
-        const p = await localPeer.current;
-        console.log("Local peer", p);
-        p.addIceCandidate(message);
+        console.log("Candidate received for connection");
+        await handleIncomingCandidate(message);
       }
     });
   }, []);
 
-  return { localVideoRef, peers };
+  return { localVideoRef, remoteStreams };
 }

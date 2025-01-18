@@ -16,37 +16,51 @@ export default function Page() {
   const [videoOn, setVideoOn] = useState(false);
 
   const peerRefs = useRef(new Map());
-  const { localVideoRef } = useMeeting(id)
-
+  const { localVideoRef, remoteStreams } = useMeeting(id);
 
   const participants = [
     { id: 1, name: "You", isLocal: true },
     { id: 2, name: "John Doe" },
     { id: 3, name: "Jane Smith" },
-    { id: 4, name: "Mike Johnson" }
+    { id: 4, name: "Mike Johnson" },
   ];
 
-  useEffect(() => {}, [])
+  useEffect(() => {}, []);
 
-
-   return (
+  return (
     <div className="h-screen w-screen bg-[#111827] text-white flex flex-col">
       <div className="p-4 bg-[#1F2937] ">
         <h3 className="text-lg font-medium">Meeting: {id}</h3>
       </div>
 
+      <div className="flex-grow overflow-y-auto p-6 bg-[#111827]"></div>
+
       <div className="flex-grow overflow-y-auto p-6 bg-[#111827]">
-        {/* <div className="grid gap-5 grid-cols-3">
-          {participants.map((participant, index) => (
-            <MeetingTile key={index} />
+        {/* Local Video */}
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-1/3 border border-gray-600 ml-4"
+        />
+
+        {/* Remote Videos */}
+        <div className="grid gap-5 grid-cols-3 mt-4">
+          {remoteStreams.map((stream, index) => (
+            <video
+              key={index}
+              autoPlay
+              playsInline
+              className="w-1/3 border border-gray-600"
+              ref={(videoElement) => {
+                if (videoElement && stream) {
+                  videoElement.srcObject = stream;
+                }
+              }}
+            />
           ))}
-        </div> */}
-      </div>
-
-      <video ref={localVideoRef} autoPlay playsInline muted className="w-1/3 border border-gray-600 ml-4"/>
-
-      <div className="flex-grow flex justify-center items-center">
-        
+        </div>
       </div>
 
       <div className="flex-shrink-0 bottom-0 left-0 w-full bg-[#1F2937] p-3 text-center flex items-center justify-center">
