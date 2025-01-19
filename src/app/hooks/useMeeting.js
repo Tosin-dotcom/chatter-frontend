@@ -86,7 +86,7 @@ export function useMeeting(meetingId) {
 
   useEffect(() => {
     socketRef.current = new WebSocket(
-      `ws://localhost:8081/ws/signaling?roomId=${meetingId}`
+      `wss://192.168.221.152:8443/ws/signaling?roomId=${meetingId}`
     );
 
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {

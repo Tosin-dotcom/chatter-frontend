@@ -10,6 +10,7 @@ import MeetingTile from "../components/MeetingTile";
 import { useMeeting } from "../hooks/useMeeting";
 
 export default function Page() {
+  // "dev": "next dev --turbopack",
   const params = useParams();
   const { id } = params;
   const [micOn, setMicOn] = useState(false);
