@@ -37,6 +37,8 @@ export default function Page() {
   //   setVideoOn(videoTrack.enabled);
   // };
 
+  console.log("Stream inside page", remoteStreams)
+
   return (
     <div className="h-screen w-screen bg-[#111827] text-white flex flex-col">
       <div className="p-4 bg-[#1F2937] ">

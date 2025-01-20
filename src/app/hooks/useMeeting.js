@@ -33,8 +33,12 @@ export function useMeeting(meetingId) {
   const userId = generateRandomString();
 
   const handleIncomingCandidate = async (candidate) => {
-    if (localPeer.current.remoteDescription) {
-      await localPeer.current.addIceCandidate(new RTCIceCandidate(candidate));
+    const peerObject = peers.find((peer) => peer.userId === candidate.userId);
+    //if (localPeer.current.remoteDescription) {
+    if (peerObject.peerConnection.remoteDescription) {
+      await peerObject.peerConnection.addIceCandidate(
+        new RTCIceCandidate(candidate)
+      );
     } else {
       pendingCandidates.current.push(candidate);
     }
@@ -49,7 +53,6 @@ export function useMeeting(meetingId) {
 
   const createPeer = async (stream, peerId) => {
     const peerConnection = new RTCPeerConnection(ICE_SERVERS);
-    console.log("Peer Created")
     stream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, stream);
     });
@@ -57,20 +60,30 @@ export function useMeeting(meetingId) {
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams;
 
-      setRemoteStreams((prev) => {
-        const isPeerPresent = prev.some(
-          (entry) => entry.peerId === peerId
-        );
-        if (isPeerPresent) return prev;
-        return [...prev, { peerId, stream: remoteStream }];
+      setRemoteStreams((prevStreams) => {
+        const isPeerPresent = prevStreams.some((entry) => entry.peerId === peerId);
+        if (!isPeerPresent) {
+          return [...prevStreams, { peerId, stream: remoteStream }];
+        }
+        return prevStreams;
       });
-      
     };
+
+    const temp = {
+      userId: peerId,
+      peerConnection,
+    };
+    const newPeers = peers.push(temp);
+    setPeers(newPeers);
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
         setTimeout(() => {
-          socketRef.current.send(JSON.stringify(event.candidate));
+          const candidateWithUserId = {
+            ...JSON.parse(JSON.stringify(event.candidate)),
+            userId,
+          };
+          socketRef.current.send(JSON.stringify(candidateWithUserId));
         }, 500);
       }
     };
@@ -85,9 +98,15 @@ export function useMeeting(meetingId) {
   };
 
   const handleUserLeave = (peerId) => {
-    const temp = remoteStreams.filter((streamData) => streamData.peerId !== peerId)
-    setRemoteStreams(temp);
+    setRemoteStreams((prevStreams) => {
+      const updatedStreams = prevStreams.filter((streamData) => streamData.peerId !== peerId);
+      console.log(`User ID removed: ${peerId}`);
+      console.log("Updated Streams after removal:", updatedStreams);
+      return updatedStreams;
+    });
   };
+  
+
 
   const initializeLocalPeerConnection = async (stream) => {
     const peerConnection = await createPeer(stream, userId);
@@ -98,7 +117,7 @@ export function useMeeting(meetingId) {
 
   useEffect(() => {
     socketRef.current = new WebSocket(
-      `wss://192.168.221.152:8443/ws/signaling?roomId=${meetingId}`
+      `wss://localhost:8443/ws/signaling?roomId=${meetingId}`
     );
 
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
@@ -114,6 +133,7 @@ export function useMeeting(meetingId) {
           JSON.stringify({
             message: "Connection established",
             type: "joined",
+            userId,
           })
         );
       }, 1000);
@@ -122,30 +142,56 @@ export function useMeeting(meetingId) {
     socketRef.current.addEventListener("message", async (event) => {
       const message = JSON.parse(event.data);
       if (message.type == "joined") {
-        const offer = await localPeer.current.createOffer();
-        localPeer.current.setLocalDescription(offer);
-        socketRef.current.send(JSON.stringify(offer));
+        const peerCon = await createPeer(
+          localStreamRef.current,
+          message.userId
+        );
+        //const offer = await localPeer.current.createOffer();
+        const offer = await peerCon.createOffer();
+        const offerWithUserId = {
+          ...offer,
+          userId,
+          to: message.userId,
+        };
+        //localPeer.current.setLocalDescription(offer);
+        peerCon.setLocalDescription(offer);
+        socketRef.current.send(JSON.stringify(offerWithUserId));
         flushPendingCandidates();
       } else if (message.type == "offer") {
-        //const peerConnection = await createPeer(localStreamRef.current);
-        localPeer.current.setRemoteDescription(
-          new RTCSessionDescription(message)
-        );
-        const answer = await localPeer.current.createAnswer();
-        await localPeer.current.setLocalDescription(answer);
-        socketRef.current.send(JSON.stringify(answer));
-        flushPendingCandidates();
+        console.log("offer", message);
+        if (message.to == userId) {
+          const peerConnection = await createPeer(
+            localStreamRef.current,
+            message.userId
+          );
+          peerConnection.setRemoteDescription(
+            new RTCSessionDescription(message)
+          );
+          const answer = await peerConnection.createAnswer();
+          const answerWithUserId = {
+            ...answer,
+            userId,
+            to: message.userId,
+          };
+          await peerConnection.setLocalDescription(answer);
+          socketRef.current.send(JSON.stringify(answerWithUserId));
+          flushPendingCandidates();
+        }
       } else if (message.type == "answer") {
-        const remoteDesc = new RTCSessionDescription(message);
-        await localPeer.current.setRemoteDescription(remoteDesc);
+        if (message.to == userId) {
+          const peerObject = peers.find(
+            (peer) => peer.userId === message.userId
+          );
+          const remoteDesc = new RTCSessionDescription(message);
+          await peerObject.peerConnection.setRemoteDescription(remoteDesc);
+        }
       } else if (message.type == "leave") {
-        console.log("Leave event")
+        console.log("Leave event");
         handleUserLeave(message.userId);
       } else if (message.candidate) {
         await handleIncomingCandidate(message);
       }
     });
-
 
     const handleTabClose = () => {
       socketRef.current.send(
@@ -162,10 +208,9 @@ export function useMeeting(meetingId) {
     return () => {
       localStream?.getTracks().forEach((track) => track.stop());
       localPeer.current?.close();
-      // peers.forEach((peer) => {
-      //   peer.connection.close();
-      // });
-   
+      peers.forEach((peer) => {
+        peer.peerConnection.close();
+      });
       socketRef.current.disconnect();
       window.removeEventListener("beforeunload", handleTabClose);
     };
