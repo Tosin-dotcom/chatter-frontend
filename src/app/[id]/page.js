@@ -37,26 +37,45 @@ export default function Page() {
   //   setVideoOn(videoTrack.enabled);
   // };
 
-  useEffect(() => {
-    console.log("remote stream inside page", remoteStreams);
-    
-  }, [remoteStreams]);
-
   return (
     <div className="h-screen w-screen bg-[#111827] text-white flex flex-col">
       <div className="p-4 bg-[#1F2937] ">
         <h3 className="text-lg font-medium">Meeting: {id}</h3>
       </div>
 
-      <div className="flex-grow overflow-y-auto p-6 bg-[#111827]"></div>
-
       <div className="flex-grow overflow-y-auto p-6 bg-[#111827]">
+        <div className="grid gap-5 grid-cols-3">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="h-[230px] rounded-lg"
+          />
+          {remoteStreams.map((stream, index) => (
+            <video
+              key={index}
+              ref={(videoElement) => {
+                if (videoElement && stream) {
+                  videoElement.srcObject = stream.stream;
+                }
+              }}
+              autoPlay
+              playsInline
+              muted
+              className="h-[230px] rounded-lg"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* <div className="flex-grow overflow-y-auto p-6 bg-[#111827]">
         <video
           ref={localVideoRef}
           autoPlay
           playsInline
           muted
-          className="w-1/3 border border-gray-600 ml-4"
+          className="h-[230px] rounded-lg"
         />
 
         <div className="grid gap-5 grid-cols-3">
@@ -75,11 +94,8 @@ export default function Page() {
             />
           ))}
 
-          {/* {participants.map((participant, index) => (
-            <MeetingTile key={index} />
-          ))} */}
         </div>
-      </div>
+      </div> */}
 
       <div className="flex-shrink-0 bottom-0 left-0 w-full bg-[#1F2937] p-3 text-center flex items-center justify-center">
         <button

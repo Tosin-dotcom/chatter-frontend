@@ -49,6 +49,7 @@ export function useMeeting(meetingId) {
 
   const createPeer = async (stream, peerId) => {
     const peerConnection = new RTCPeerConnection(ICE_SERVERS);
+    console.log("Peer Created")
     stream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, stream);
     });
@@ -63,6 +64,7 @@ export function useMeeting(meetingId) {
         if (isPeerPresent) return prev;
         return [...prev, { peerId, stream: remoteStream }];
       });
+      
     };
 
     peerConnection.onicecandidate = (event) => {
@@ -83,12 +85,8 @@ export function useMeeting(meetingId) {
   };
 
   const handleUserLeave = (peerId) => {
-    // Remove the remote stream for the user that left
-    setRemoteStreams((prev) =>
-      prev.filter((streamData) => streamData.peerId !== peerId)
-    );
-    console.log("User left")
-    console.log("remote stream inside hook", remoteStreams)
+    const temp = remoteStreams.filter((streamData) => streamData.peerId !== peerId)
+    setRemoteStreams(temp);
   };
 
   const initializeLocalPeerConnection = async (stream) => {
@@ -171,7 +169,7 @@ export function useMeeting(meetingId) {
       socketRef.current.disconnect();
       window.removeEventListener("beforeunload", handleTabClose);
     };
-  }, []);
+  }, [meetingId]);
 
   return { localVideoRef, remoteStreams };
 }
