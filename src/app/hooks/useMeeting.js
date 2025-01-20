@@ -30,13 +30,13 @@ export function useMeeting(meetingId) {
       .join("");
   }
 
+  const userId = generateRandomString();
+
   const handleIncomingCandidate = async (candidate) => {
     if (localPeer.current.remoteDescription) {
       await localPeer.current.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log("Added ICE candidate:", candidate);
     } else {
       pendingCandidates.current.push(candidate);
-      console.log("Queued ICE candidate:", candidate);
     }
   };
 
@@ -44,20 +44,25 @@ export function useMeeting(meetingId) {
     while (pendingCandidates.current.length > 0) {
       const candidate = pendingCandidates.current.shift();
       await localPeer.current.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log("Flushed ICE candidate:", candidate);
     }
   };
 
-  const createPeer = async (stream) => {
+  const createPeer = async (stream, peerId) => {
     const peerConnection = new RTCPeerConnection(ICE_SERVERS);
     stream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, stream);
     });
-    console.log("Peer connection added");
 
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams;
-      setRemoteStreams((prev) => [...prev, remoteStream]);
+
+      setRemoteStreams((prev) => {
+        const isPeerPresent = prev.some(
+          (entry) => entry.peerId === peerId
+        );
+        if (isPeerPresent) return prev;
+        return [...prev, { peerId, stream: remoteStream }];
+      });
     };
 
     peerConnection.onicecandidate = (event) => {
@@ -77,8 +82,17 @@ export function useMeeting(meetingId) {
     return peerConnection;
   };
 
+  const handleUserLeave = (peerId) => {
+    // Remove the remote stream for the user that left
+    setRemoteStreams((prev) =>
+      prev.filter((streamData) => streamData.peerId !== peerId)
+    );
+    console.log("User left")
+    console.log("remote stream inside hook", remoteStreams)
+  };
+
   const initializeLocalPeerConnection = async (stream) => {
-    const peerConnection = await createPeer(stream);
+    const peerConnection = await createPeer(stream, userId);
     localPeer.current = peerConnection;
 
     return peerConnection;
@@ -114,23 +128,49 @@ export function useMeeting(meetingId) {
         localPeer.current.setLocalDescription(offer);
         socketRef.current.send(JSON.stringify(offer));
         flushPendingCandidates();
-        console.log("offer sent", offer);
       } else if (message.type == "offer") {
-        const peerConnection = await createPeer(localStreamRef.current);
-        peerConnection.setRemoteDescription(new RTCSessionDescription(message));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
+        //const peerConnection = await createPeer(localStreamRef.current);
+        localPeer.current.setRemoteDescription(
+          new RTCSessionDescription(message)
+        );
+        const answer = await localPeer.current.createAnswer();
+        await localPeer.current.setLocalDescription(answer);
         socketRef.current.send(JSON.stringify(answer));
         flushPendingCandidates();
       } else if (message.type == "answer") {
-        console.log("Answer received", message);
         const remoteDesc = new RTCSessionDescription(message);
         await localPeer.current.setRemoteDescription(remoteDesc);
+      } else if (message.type == "leave") {
+        console.log("Leave event")
+        handleUserLeave(message.userId);
       } else if (message.candidate) {
-        console.log("Candidate received for connection");
         await handleIncomingCandidate(message);
       }
     });
+
+
+    const handleTabClose = () => {
+      socketRef.current.send(
+        JSON.stringify({
+          message: "Leave Meeting",
+          type: "leave",
+          userId,
+        })
+      );
+    };
+
+    window.addEventListener("beforeunload", handleTabClose);
+
+    return () => {
+      localStream?.getTracks().forEach((track) => track.stop());
+      localPeer.current?.close();
+      // peers.forEach((peer) => {
+      //   peer.connection.close();
+      // });
+   
+      socketRef.current.disconnect();
+      window.removeEventListener("beforeunload", handleTabClose);
+    };
   }, []);
 
   return { localVideoRef, remoteStreams };

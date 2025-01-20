@@ -10,7 +10,6 @@ import MeetingTile from "../components/MeetingTile";
 import { useMeeting } from "../hooks/useMeeting";
 
 export default function Page() {
-  // "dev": "next dev --turbopack",
   const params = useParams();
   const { id } = params;
   const [micOn, setMicOn] = useState(false);
@@ -26,7 +25,22 @@ export default function Page() {
     { id: 4, name: "Mike Johnson" },
   ];
 
-  useEffect(() => {}, []);
+  // const toggleAudio = () => {
+  //   const audioTrack = localStream.getAudioTracks()[0];
+  //   audioTrack.enabled = !audioTrack.enabled;
+  //   setMicOn(audioTrack.enabled);
+  // };
+
+  // const toggleVideo = () => {
+  //   const videoTrack = localStream.getVideoTracks()[0];
+  //   videoTrack.enabled = !videoTrack.enabled;
+  //   setVideoOn(videoTrack.enabled);
+  // };
+
+  useEffect(() => {
+    console.log("remote stream inside page", remoteStreams);
+    
+  }, [remoteStreams]);
 
   return (
     <div className="h-screen w-screen bg-[#111827] text-white flex flex-col">
@@ -37,7 +51,6 @@ export default function Page() {
       <div className="flex-grow overflow-y-auto p-6 bg-[#111827]"></div>
 
       <div className="flex-grow overflow-y-auto p-6 bg-[#111827]">
-        {/* Local Video */}
         <video
           ref={localVideoRef}
           autoPlay
@@ -46,21 +59,25 @@ export default function Page() {
           className="w-1/3 border border-gray-600 ml-4"
         />
 
-        {/* Remote Videos */}
-        <div className="grid gap-5 grid-cols-3 mt-4">
+        <div className="grid gap-5 grid-cols-3">
           {remoteStreams.map((stream, index) => (
             <video
               key={index}
-              autoPlay
-              playsInline
-              className="w-1/3 border border-gray-600"
               ref={(videoElement) => {
                 if (videoElement && stream) {
-                  videoElement.srcObject = stream;
+                  videoElement.srcObject = stream.stream;
                 }
               }}
+              autoPlay
+              playsInline
+              muted
+              className="w-1/3 border border-gray-600 ml-4"
             />
           ))}
+
+          {/* {participants.map((participant, index) => (
+            <MeetingTile key={index} />
+          ))} */}
         </div>
       </div>
 
