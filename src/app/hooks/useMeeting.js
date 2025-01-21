@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { generateRandomName } from "../utils/generateRandomName";
 
-export function useMeeting(meetingId) {
+export function useMeeting(meetingId, name) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [peers, setPeers] = useState([]);
@@ -11,6 +12,8 @@ export function useMeeting(meetingId) {
   const localStreamRef = useRef(null);
   const localPeer = useRef(null);
   const pendingCandidates = useRef([]);
+
+  
 
   const constraints = {
     video: { width: 640, height: 360, frameRate: 15 },
@@ -51,7 +54,7 @@ export function useMeeting(meetingId) {
     }
   };
 
-  const createPeer = async (stream, peerId) => {
+  const createPeer = async (stream, peerId, name) => {
     const peerConnection = new RTCPeerConnection(ICE_SERVERS);
     stream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, stream);
@@ -63,7 +66,7 @@ export function useMeeting(meetingId) {
       setRemoteStreams((prevStreams) => {
         const isPeerPresent = prevStreams.some((entry) => entry.peerId === peerId);
         if (!isPeerPresent) {
-          return [...prevStreams, { peerId, stream: remoteStream }];
+          return [...prevStreams, { peerId, name, stream: remoteStream }];
         }
         return prevStreams;
       });
@@ -100,8 +103,6 @@ export function useMeeting(meetingId) {
   const handleUserLeave = (peerId) => {
     setRemoteStreams((prevStreams) => {
       const updatedStreams = prevStreams.filter((streamData) => streamData.peerId !== peerId);
-      console.log(`User ID removed: ${peerId}`);
-      console.log("Updated Streams after removal:", updatedStreams);
       return updatedStreams;
     });
   };
@@ -109,7 +110,7 @@ export function useMeeting(meetingId) {
 
 
   const initializeLocalPeerConnection = async (stream) => {
-    const peerConnection = await createPeer(stream, userId);
+    const peerConnection = await createPeer(stream, userId, name);
     localPeer.current = peerConnection;
 
     return peerConnection;
@@ -128,12 +129,14 @@ export function useMeeting(meetingId) {
     });
 
     socketRef.current.addEventListener("open", () => {
+      console.log("Name of user", name)
       setTimeout(() => {
         socketRef.current.send(
           JSON.stringify({
             message: "Connection established",
             type: "joined",
             userId,
+            name
           })
         );
       }, 1000);
@@ -144,13 +147,15 @@ export function useMeeting(meetingId) {
       if (message.type == "joined") {
         const peerCon = await createPeer(
           localStreamRef.current,
-          message.userId
+          message.userId,
+          message.name
         );
         //const offer = await localPeer.current.createOffer();
         const offer = await peerCon.createOffer();
         const offerWithUserId = {
           ...offer,
           userId,
+          name,
           to: message.userId,
         };
         //localPeer.current.setLocalDescription(offer);
@@ -162,7 +167,8 @@ export function useMeeting(meetingId) {
         if (message.to == userId) {
           const peerConnection = await createPeer(
             localStreamRef.current,
-            message.userId
+            message.userId,
+            message.name
           );
           peerConnection.setRemoteDescription(
             new RTCSessionDescription(message)
@@ -216,5 +222,5 @@ export function useMeeting(meetingId) {
     };
   }, [meetingId]);
 
-  return { localVideoRef, remoteStreams };
+  return {localVideoRef, remoteStreams, localStream, };
 }

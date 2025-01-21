@@ -1,11 +1,27 @@
 
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+
 export default function JoinMeeting({isOpen, close}) {
+
+  const [name, setName] = useState(null);
+  const [meetingLink, setMeetingLink] = useState(null);
+
+  const router = useRouter();
+
+  const handleClick = async (e) => {
+
+    e.preventDefault()
+    localStorage.setItem("name", name)
+    window.location.href = `/${meetingLink}`
+  }
 
   if (!isOpen) {
     return null
   }
-
-
   return (
     <div className="h-screen w-screen fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
       <div className="w-[420px] h-80 border bg-white rounded-2xl p-7">
@@ -33,11 +49,13 @@ export default function JoinMeeting({isOpen, close}) {
             Your Name
           </label>
           <input
+          required
             type="text"
             id="firstname"
             name="firstname"
             placeholder="Enter Your name"
             className="p-2 w-full rounded-lg mt-1 border text-black border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
 
@@ -46,16 +64,21 @@ export default function JoinMeeting({isOpen, close}) {
             Meeting Code
           </label>
           <input
+          required
             type="text"
             id="meetingcode"
             name="meetingcode"
             placeholder="Enter Meeting code"
             className="p-2 w-full rounded-lg mt-1 border text-black border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+            onChange={(e) => setMeetingLink(e.target.value)}
           />
         </div>
 
         <div>
-          <button className="bg-blue-800 hover:bg-blue-700 w-full mt-4 p-2 rounded-lg text-white">
+          <button 
+          onClick={handleClick}
+          type="button"
+          className="bg-blue-800 hover:bg-blue-700 w-full mt-4 p-2 rounded-lg text-white">
             Join Meeting
           </button>
         </div>

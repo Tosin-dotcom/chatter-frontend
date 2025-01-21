@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 export default function StartMeeting({ isOpen, close }) {
@@ -8,8 +9,11 @@ export default function StartMeeting({ isOpen, close }) {
   const [meetingLink, setMeetingLink] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    localStorage.setItem("name", name)
     try {
       setLoading(true);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -22,6 +26,8 @@ export default function StartMeeting({ isOpen, close }) {
         },
       });
       setMeetingLink(response.data);
+      //router.replace( `/${response.data}`);
+      window.location.href = `/${response.data}`
     } catch (err) {
     } finally {
       setLoading(false);
