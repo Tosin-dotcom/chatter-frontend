@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { generateRandomName } from "../utils/generateRandomName";
 
-export function useMeeting(meetingId, name) {
+
+export function useMeeting(meetingId, name, userId) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [peers, setPeers] = useState([]);
@@ -12,8 +12,6 @@ export function useMeeting(meetingId, name) {
   const localStreamRef = useRef(null);
   const localPeer = useRef(null);
   const pendingCandidates = useRef([]);
-
-  
 
   const constraints = {
     video: { width: 640, height: 360, frameRate: 15 },
@@ -25,15 +23,6 @@ export function useMeeting(meetingId, name) {
       { urls: "stun:stun1.l.google.com:19302" },
     ],
   };
-
-  function generateRandomString() {
-    return Array(4)
-      .fill(0)
-      .map(() => Math.random().toString(36).charAt(2))
-      .join("");
-  }
-
-  const userId = generateRandomString();
 
   const handleIncomingCandidate = async (candidate) => {
     const peerObject = peers.find((peer) => peer.userId === candidate.userId);
@@ -62,11 +51,15 @@ export function useMeeting(meetingId, name) {
 
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams;
-
       setRemoteStreams((prevStreams) => {
-        const isPeerPresent = prevStreams.some((entry) => entry.peerId === peerId);
+        const isPeerPresent = prevStreams.some(
+          (entry) => entry.peerId === peerId
+        );
         if (!isPeerPresent) {
-          return [...prevStreams, { peerId, name, stream: remoteStream }];
+          return [
+            ...prevStreams,
+            { peerId, name, audioEnabled: false, stream: remoteStream },
+          ];
         }
         return prevStreams;
       });
@@ -102,12 +95,23 @@ export function useMeeting(meetingId, name) {
 
   const handleUserLeave = (peerId) => {
     setRemoteStreams((prevStreams) => {
-      const updatedStreams = prevStreams.filter((streamData) => streamData.peerId !== peerId);
+      const updatedStreams = prevStreams.filter(
+        (streamData) => streamData.peerId !== peerId
+      );
       return updatedStreams;
     });
   };
-  
 
+  const handleUserAudioToggle = (peerId, enabled) => {
+    setRemoteStreams((prevStreams) => {
+      return prevStreams.map((stream) => {
+        if (stream.peerId === peerId) {
+          return { ...stream, audioEnabled: enabled };
+        }
+        return stream;
+      });
+    });
+  };
 
   const initializeLocalPeerConnection = async (stream) => {
     const peerConnection = await createPeer(stream, userId, name);
@@ -116,9 +120,19 @@ export function useMeeting(meetingId, name) {
     return peerConnection;
   };
 
+  const sendAudioEvent = (peerId, enabled) => {
+    socketRef.current.send(
+      JSON.stringify({
+        type: "audio",
+        enabled,
+        userId: peerId,
+      })
+    );
+  };
+
   useEffect(() => {
     socketRef.current = new WebSocket(
-      `wss://localhost:8443/ws/signaling?roomId=${meetingId}`
+      `wss://192.168.221.152:8443/ws/signaling?roomId=${meetingId}`
     );
 
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
@@ -129,14 +143,14 @@ export function useMeeting(meetingId, name) {
     });
 
     socketRef.current.addEventListener("open", () => {
-      console.log("Name of user", name)
+      console.log("Name of user", name);
       setTimeout(() => {
         socketRef.current.send(
           JSON.stringify({
             message: "Connection established",
             type: "joined",
             userId,
-            name
+            name,
           })
         );
       }, 1000);
@@ -194,6 +208,8 @@ export function useMeeting(meetingId, name) {
       } else if (message.type == "leave") {
         console.log("Leave event");
         handleUserLeave(message.userId);
+      } else if (message.type == "audio") {
+        handleUserAudioToggle(message.userId, message.enabled);
       } else if (message.candidate) {
         await handleIncomingCandidate(message);
       }
@@ -222,5 +238,7 @@ export function useMeeting(meetingId, name) {
     };
   }, [meetingId]);
 
-  return {localVideoRef, remoteStreams, localStream, };
+  return { localVideoRef, remoteStreams, localStream, userId, sendAudioEvent };
 }
+
+
