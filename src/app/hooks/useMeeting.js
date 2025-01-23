@@ -58,7 +58,7 @@ export function useMeeting(meetingId, name, userId) {
         if (!isPeerPresent) {
           return [
             ...prevStreams,
-            { peerId, name, audioEnabled: false, stream: remoteStream },
+            { peerId, name, audioEnabled: false, videoEnabled: false, stream: remoteStream },
           ];
         }
         return prevStreams;
@@ -113,6 +113,19 @@ export function useMeeting(meetingId, name, userId) {
     });
   };
 
+  const handleUserVideoToggle = (peerId, enabled) => {
+    setRemoteStreams((prevStreams) => {
+      return prevStreams.map((stream) => {
+        if (stream.peerId === peerId) {
+          return { ...stream, videoEnabled: enabled };
+        }
+        return stream;
+      });
+    });
+  };
+
+
+
   const initializeLocalPeerConnection = async (stream) => {
     const peerConnection = await createPeer(stream, userId, name);
     localPeer.current = peerConnection;
@@ -129,6 +142,16 @@ export function useMeeting(meetingId, name, userId) {
       })
     );
   };
+
+  const sendVideoEvent = (peerId, enabled) => {
+    socketRef.current.send(
+      JSON.stringify({
+        type: "video",
+        enabled,
+        userId: peerId,
+      })
+    );
+  }
 
   useEffect(() => {
     socketRef.current = new WebSocket(
@@ -210,6 +233,8 @@ export function useMeeting(meetingId, name, userId) {
         handleUserLeave(message.userId);
       } else if (message.type == "audio") {
         handleUserAudioToggle(message.userId, message.enabled);
+      } else if (message.type == "video") {
+          handleUserVideoToggle(message.userId, message.enabled)
       } else if (message.candidate) {
         await handleIncomingCandidate(message);
       }
@@ -238,7 +263,7 @@ export function useMeeting(meetingId, name, userId) {
     };
   }, [meetingId]);
 
-  return { localVideoRef, remoteStreams, localStream, userId, sendAudioEvent };
+  return { localVideoRef, remoteStreams, localStream, userId, sendAudioEvent, sendVideoEvent };
 }
 
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { PiMicrophone, PiMicrophoneSlashLight } from "react-icons/pi";
+import { LuUsers } from "react-icons/lu";
 import { CiVideoOn, CiVideoOff } from "react-icons/ci";
 import { LuMonitorUp } from "react-icons/lu";
 import { FiPhoneOff } from "react-icons/fi";
@@ -26,8 +27,13 @@ export default function Page() {
   );
   const [userId] = useState(generateUserId());
 
-  const { localVideoRef, remoteStreams, localStream, sendAudioEvent } =
-    useMeeting(id, userName, userId);
+  const {
+    localVideoRef,
+    remoteStreams,
+    localStream,
+    sendAudioEvent,
+    sendVideoEvent,
+  } = useMeeting(id, userName, userId);
 
   const toggleAudio = () => {
     const audioTrack = localStream.getAudioTracks()[0];
@@ -40,15 +46,37 @@ export default function Page() {
     const videoTrack = localStream.getVideoTracks()[0];
     videoTrack.enabled = !videoTrack.enabled;
     setVideoOn(videoTrack.enabled);
+    sendVideoEvent(userId, videoTrack.enabled);
   };
+
+  const getInitials = (name) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+
+  const generateColor = (name) => {
+    const colors = [
+      'bg-blue-600',
+      'bg-purple-600',
+      'bg-green-600',
+      'bg-yellow-600',
+      'bg-pink-600',
+      'bg-indigo-600',
+      'bg-red-600',
+      'bg-teal-600'
+    ];
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[index % colors.length];
+  }
 
   const handleLeave = () => {
     window.location.href = "/";
   };
-
-  useEffect(() => {
-    console.log("Remote stream use effect", remoteStreams);
-  }, [remoteStreams]);
 
   useEffect(() => {
     if (localStream) {
@@ -77,8 +105,12 @@ export default function Page() {
 
   return (
     <div className="h-screen w-screen bg-[#111827] text-white flex flex-col">
-      <div className="p-4 bg-[#1F2937] ">
-        <h3 className="text-lg font-medium">Meeting: {id}</h3>
+      <div className="flex items-center space-x-4 bg-[#1F2937] p-4">
+        <h1 className="text-white text-lg font-medium">Meeting: {id}</h1>
+        <div className="flex items-center text-gray-300 text-sm">
+          <LuUsers className="h-4 w-4 mr-1" />
+          <span>{remoteStreams.length + 1}</span>
+        </div>
       </div>
 
       <div className="flex-grow overflow-y-auto p-6 bg-[#111827]">
@@ -106,12 +138,26 @@ export default function Page() {
               autoPlay
               playsInline
               muted
-              className="h-[230px] rounded-lg w-full object-cover"
+              className={`h-[230px] rounded-lg w-full object-cover ${
+                videoOn == false && "hidden"
+              }`}
             />
-            <div className="rounded-lg absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
+
+            {videoOn == false && (
+              <div className="h-[230px] rounded-lg w-full bg-[#1F2937]">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`font-semibold text-4xl rounded-full w-24 h-24 flex items-center justify-center ${generateColor(userName)}`}>
+                    {getInitials(userName)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-lg absolute bottom-0 left-0 right-0 p-3 ">
               <p>(You) {userName}</p>
             </div>
           </div>
+
           {remoteStreams.map((stream, index) => (
             <div
               className={`relative rounded-lg transition duration-300 ease-in-out ${
@@ -139,11 +185,23 @@ export default function Page() {
                 }}
                 autoPlay
                 playsInline
-                className="h-[230px] rounded-lg w-full object-cover"
+                className={`h-[230px] rounded-lg w-full object-cover ${
+                  !stream.videoEnabled && "hidden"
+                }`}
               />
               <div className="rounded-lg absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
                 <p>{stream.name}</p>
               </div>
+
+              {!stream.videoEnabled && (
+                <div className="h-[230px] rounded-lg w-full bg-[#1F2937]">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`font-semibold text-4xl rounded-full w-24 h-24 flex items-center justify-center ${generateColor(stream.name)}`}>
+                      {getInitials(stream.name)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
