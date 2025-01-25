@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Chatter Video Conferencing Frontend  
 
-## Getting Started
+This repository contains the **frontend** for a seamless and interactive **video conferencing application** built using **Next.js**. The application enables real-time communication with support for multiple users, providing an easy-to-use interface without requiring any login or signup.  
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## **Features**  
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Seamless Video and Audio Functionality**:  
+  Real-time video and audio streaming with multiple participants for a smooth conferencing experience.  
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- **No Authentication Required**:  
+  Users can join a conference instantly—no need to sign up or log in.  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Interactive User Interface**:  
+  Modern and responsive design optimized for a smooth user experience across devices.  
 
-## Learn More
+- **Join on the Go**:  
+  Enter a conference directly by entering a room code, reducing barriers to connection.  
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## **Tech Stack**  
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Next.js**: Framework for a server-side rendered, high-performance React application.  
+- **WebRTC**: Real-time communication technology for video and audio streaming.  
+- **CSS Modules**: Scoped and maintainable styles for a clean UI.  
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## **Getting Started**  
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Follow these instructions to set up and run the frontend locally:  
+
+### **Prerequisites**  
+
+Ensure you have the following installed on your local machine:  
+- **Node.js** (v16 or higher)  
+- **npm** or **yarn**  
+
+### **Installation**  
+
+1. Clone the repository:  
+   ```
+   git clone https://github.com/tosin-dotcom/chatter-frontend.git
+   cd chatter-frontend
+
+2. Install dependencies:
+    ```
+    npm install  
+    ```
+
+3. Start the development server:
+    ```
+    npm run dev  
+    ```
+
+4. Open your browser and navigate to:
+    ```
+    http://localhost:3000  
+    ```
+
+---
+
+## Usage
+1. Enter a unique room code to join or create a conference.
+2. Once in the room, interact with the seamless video and audio controls.
+3. Enjoy a smooth, real-time connection with other participants.
+
+---
+
+## Project Structure
+- **components/:** Reusable React components for the UI.
+- **pages/:** Next.js pages for routing.
+- **styles/:** CSS modules for scoped styling.
+- **utils/:** Helper functions and configurations (e.g., WebRTC utilities).
+
