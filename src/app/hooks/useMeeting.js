@@ -52,18 +52,24 @@ export function useMeeting(meetingId, name, userId) {
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams;
       setRemoteStreams((prevStreams) => {
-        const isPeerPresent = prevStreams.some(
-          (entry) => entry.peerId === peerId
-        );
-        if (!isPeerPresent) {
-          return [
-            ...prevStreams,
-            { peerId, name, audioEnabled: false, videoEnabled: false, stream: remoteStream },
-          ];
+        const peerIndex = prevStreams.findIndex((entry) => entry.peerId === peerId);
+    
+        if (peerIndex !== -1) {
+          const updatedStreams = [...prevStreams];
+          updatedStreams[peerIndex] = {
+            ...updatedStreams[peerIndex],
+            stream: remoteStream,
+          };
+          return updatedStreams;
         }
-        return prevStreams;
+  
+        return [
+          ...prevStreams,
+          { peerId, name, audioEnabled: false, videoEnabled: false, stream: remoteStream },
+        ];
       });
     };
+    
 
     const temp = {
       userId: peerId,
@@ -155,7 +161,7 @@ export function useMeeting(meetingId, name, userId) {
 
   useEffect(() => {
     socketRef.current = new WebSocket(
-      `wss://192.168.221.152:8443/ws/signaling?roomId=${meetingId}`
+      `wss://localhost:8443/ws/signaling?roomId=${meetingId}`
     );
 
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {

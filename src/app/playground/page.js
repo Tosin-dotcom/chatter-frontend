@@ -1,7 +1,10 @@
 import MeetingTile from "../components/MeetingTile";
+import Participant from "../components/Participant";
+
 
 export default function Page() {
   return (
-    <MeetingTile name={"Oluwatosin"}/>
+    
+    <Participant isOpen={true}/>
   )
 }

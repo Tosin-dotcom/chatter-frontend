@@ -9,10 +9,13 @@ import { LuMonitorUp } from "react-icons/lu";
 import { FiPhoneOff } from "react-icons/fi";
 import { useMeeting } from "../hooks/useMeeting";
 import { useRouter } from "next/navigation";
+import Participant from "../components/Participant";
 import {
   generateRandomName,
   generateUserId,
-} from "../utils/generateRandomName";
+  generateColor,
+  getInitials,
+} from "../utils/Utils";
 
 export default function Page() {
   const params = useParams();
@@ -22,6 +25,7 @@ export default function Page() {
   const [videoOn, setVideoOn] = useState(false);
   //const [loading, setLoading] = useState(true);
   const [localUserTalking, setLocalUserTalking] = useState(false);
+  const [participantList, setParticipantList] = useState(false);
   const [userName, setUserName] = useState(
     localStorage.getItem("name") || generateRandomName()
   );
@@ -49,30 +53,17 @@ export default function Page() {
     sendVideoEvent(userId, videoTrack.enabled);
   };
 
-  const getInitials = (name) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+
+
+  const stopCamera = () => {
+    const stream = localStream;
+    stream.getTracks().forEach((track) => {
+      if (track.kind === 'video') {
+        track.stop();
+      }
+    });
   };
-
-
-  const generateColor = (name) => {
-    const colors = [
-      'bg-blue-600',
-      'bg-purple-600',
-      'bg-green-600',
-      'bg-yellow-600',
-      'bg-pink-600',
-      'bg-indigo-600',
-      'bg-red-600',
-      'bg-teal-600'
-    ];
-    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[index % colors.length];
-  }
+  
 
   const handleLeave = () => {
     window.location.href = "/";
@@ -101,6 +92,7 @@ export default function Page() {
         videoTrack.enabled = false;
       }
     }
+
   }, [localStream]);
 
   return (
@@ -113,8 +105,8 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto p-6 bg-[#111827]">
-        <div className="grid gap-5 grid-cols-3">
+      <div className="flex-grow overflow-y-auto p-6 bg-[#111827] relative">
+        <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${participantList && "mr-80"}`}>
           <div
             className={`relative rounded-lg transition duration-300 ease-in-out 
               ${
@@ -138,15 +130,19 @@ export default function Page() {
               autoPlay
               playsInline
               muted
-              className={`h-[230px] rounded-lg w-full object-cover ${
+              className={`h-[220px] rounded-lg w-full object-cover ${
                 videoOn == false && "hidden"
               }`}
             />
 
             {videoOn == false && (
-              <div className="h-[230px] rounded-lg w-full bg-[#1F2937]">
+              <div className="h-[220px] rounded-lg w-full bg-[#1F2937]">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`font-semibold text-4xl rounded-full w-24 h-24 flex items-center justify-center ${generateColor(userName)}`}>
+                  <span
+                    className={`font-semibold text-4xl rounded-full w-24 h-24 flex items-center justify-center ${generateColor(
+                      userName
+                    )}`}
+                  >
                     {getInitials(userName)}
                   </span>
                 </div>
@@ -185,18 +181,22 @@ export default function Page() {
                 }}
                 autoPlay
                 playsInline
-                className={`h-[230px] rounded-lg w-full object-cover ${
+                className={`h-[220px] rounded-lg w-full object-cover ${
                   !stream.videoEnabled && "hidden"
                 }`}
               />
-              <div className="rounded-lg absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
+              <div className="rounded-lg absolute bottom-0 left-0 right-0 p-3">
                 <p>{stream.name}</p>
               </div>
 
               {!stream.videoEnabled && (
-                <div className="h-[230px] rounded-lg w-full bg-[#1F2937]">
+                <div className="h-[220px] rounded-lg w-full bg-[#1F2937]">
                   <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`font-semibold text-4xl rounded-full w-24 h-24 flex items-center justify-center ${generateColor(stream.name)}`}>
+                    <span
+                      className={`font-semibold text-4xl rounded-full w-24 h-24 flex items-center justify-center ${generateColor(
+                        stream.name
+                      )}`}
+                    >
                       {getInitials(stream.name)}
                     </span>
                   </div>
@@ -205,14 +205,28 @@ export default function Page() {
             </div>
           ))}
         </div>
+
+
+        <Participant
+        micOn={micOn}
+        videoOn={videoOn}
+        remoteStreams={remoteStreams}
+        name={userName}
+        isOpen={participantList}
+        close={() => setParticipantList(false)}
+      />
+
+
       </div>
 
-      <div className="flex-shrink-0 bottom-0 left-0 w-full bg-[#1F2937] p-3 text-center flex items-center justify-center">
+      
+      <div className="flex-shrink-0 bottom-0 left-0 z-20 w-full bg-[#1F2937] p-3 text-center flex items-center justify-center">
         <button
           onClick={toggleAudio}
-          //onClick={handleMicClick}
           className={`rounded-full w-12 h-12 flex items-center justify-center p-2 mr-4 ${
-            micOn ? "bg-[#374151]  hover:bg-gray-600" : "bg-red-700"
+            micOn
+              ? "bg-[#374151]  hover:bg-gray-600"
+              : "bg-red-700 hover:bg-red-600"
           }`}
         >
           {micOn ? (
@@ -225,8 +239,10 @@ export default function Page() {
         <button
           onClick={toggleVideo}
           //onClick={handleVideoClick}
-          className={`rounded-full w-12 h-12 flex items-center justify-center p-2 mr-4 ${
-            videoOn ? "bg-[#374151]  hover:bg-gray-600" : "bg-red-700"
+          className={`rounded-full w-12 h-12  flex items-center justify-center p-2 mr-4 ${
+            videoOn
+              ? "bg-[#374151]  hover:bg-gray-600"
+              : "bg-red-700 hover:bg-red-600"
           }`}
         >
           {videoOn ? (
@@ -236,8 +252,19 @@ export default function Page() {
           )}
         </button>
 
+        
+
         <button className="rounded-full w-12 h-12 flex items-center justify-center p-2 mr-4 bg-[#374151] hover:bg-gray-600">
           <LuMonitorUp className="size-6" />
+        </button>
+
+
+        <button
+          className={
+            "rounded-full w-12 h-12 flex items-center justify-center bg-[#374151] hover:bg-gray-600 p-2 mr-4"
+          } onClick={() => setParticipantList(!participantList)}
+        >
+          <LuUsers className="size-6" />
         </button>
 
         <button

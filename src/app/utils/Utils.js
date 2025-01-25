@@ -27,3 +27,29 @@ export const generateUserId = () => {
     Math.random().toString(36).charAt(2)
   ).join("");
 };
+
+
+export const generateColor = (name) => {
+  const colors = [
+    'bg-blue-600',
+    'bg-purple-600',
+    'bg-green-600',
+    'bg-yellow-600',
+    'bg-pink-600',
+    'bg-indigo-600',
+    'bg-red-600',
+    'bg-teal-600'
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[index % colors.length];
+}
+
+
+export const getInitials = (name) => {
+  return name
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
