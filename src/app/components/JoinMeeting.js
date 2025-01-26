@@ -84,5 +84,5 @@ export default function JoinMeeting({isOpen, close}) {
         </div>
       </div>
     </div>
-  );
+  );   
 }
