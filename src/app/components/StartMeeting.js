@@ -17,9 +17,10 @@ export default function StartMeeting({ isOpen, close }) {
     try {
       setLoading(true);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const api = `${apiBaseUrl}/meeting/start`;
+      //const api = `${apiBaseUrl}/meeting/start`;
+      const api = `https://chatter-frontend-62vq.onrender.com/api/meeting/start`;
 
-      
+    
       const response = await axios.post(api, null, {
         params: { name: name },
         headers: {
