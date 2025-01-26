@@ -160,9 +160,11 @@ export function useMeeting(meetingId, name, userId) {
   }
 
   useEffect(() => {
-    socketRef.current = new WebSocket(
-      `wss://localhost:8443/ws/signaling?roomId=${meetingId}`
-    );
+    // socketRef.current = new WebSocket(
+    //   `wss://localhost:8443/ws/signaling?roomId=${meetingId}`
+    // );
+    socketRef.current = new WebSocket(`wss://chatter-backend-b43o.onrender.com/ws/signaling?roomId=${meetingId}`);
+   
 
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
       setLocalStream(stream);
