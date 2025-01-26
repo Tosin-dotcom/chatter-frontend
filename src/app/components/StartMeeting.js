@@ -19,6 +19,7 @@ export default function StartMeeting({ isOpen, close }) {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const api = `${apiBaseUrl}/meeting/start`;
 
+      
       const response = await axios.post(api, null, {
         params: { name: name },
         headers: {
