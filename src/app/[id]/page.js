@@ -30,7 +30,7 @@ export default function Page() {
     localStorage.getItem("name") || generateRandomName()
   );
   const [userId] = useState(generateUserId());
-
+ 
   const {
     localVideoRef,
     remoteStreams,
@@ -104,6 +104,8 @@ export default function Page() {
           <span>{remoteStreams.length + 1}</span>
         </div>
       </div>
+
+      
 
       <div className="flex-grow overflow-y-auto p-6 bg-[#111827] relative">
         <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${participantList && "mr-80"}`}>
