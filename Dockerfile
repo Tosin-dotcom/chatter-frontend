@@ -11,6 +11,7 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV="production"
+ENV NEXT_PUBLIC_API_BASE_URL="https://chatter-backend-oojzhg.fly.dev/api"
 
 
 # Throw-away build stage to reduce size of final image
